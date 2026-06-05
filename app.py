@@ -2,16 +2,20 @@ from flask import Flask, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import os
+# 1. 주소 인코딩을 위한 라이브러리 추가
+import urllib.parse
 
 app = Flask(__name__)
 CORS(app)
 
-# MySQL 연결 설정 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://admin:Qlalfqjsgh2@@localhost:13306/WiMANS'
+# 2. 비밀번호를 안전하게 인코딩 처리
+password = urllib.parse.quote_plus("Qlalfqjsgh2@")
+
+# 3. 인코딩된 비밀번호를 문자열 포맷팅(f-string)으로 삽입
+app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://admin:{password}@localhost:13306/WiMANS'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
-
 # ==========================================
 # 1. DB 모델 정의 (제공해주신 SQL 스크립트 기반)
 # ==========================================
