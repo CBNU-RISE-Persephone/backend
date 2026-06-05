@@ -48,55 +48,22 @@ class VideoData(db.Model):
 @app.route('/api/samples', methods=['GET'])
 def get_samples():
     try:
-        # 데이터베이스의 samples 테이블에서 상위 50개 데이터를 가져옵니다.
         samples_list = Sample.query.limit(50).all()
         
         result = []
         for s in samples_list:
-            # 💡 중요: 리액트 Data.jsx 코드가data.id, data.subTitle을 사용하고 있으므로 key 이름을 정확히 맞춰줍니다.
             result.append({
-                "id": s.sample_id,  # 리액트의 data.id와 매핑
+                "id": s.sample_id,
                 "title": f"Sample {s.sample_id}",
-                # 사용자가 요구한 sample_id, environment, wifi_band를 한눈에 볼 수 있도록 구성
                 "subTitle": f"ID: {s.sample_id} | Env: {s.environment} | Band: {s.wifi_band}"
             })
         return jsonify(result)
     except Exception as e:
-        # 에러가 나면 콘솔에 출력하여 디버깅하기 쉽게 만듭니다.
         print("백엔드 에러 발생:", str(e))
         return jsonify({"error": str(e)}), 500
 
 
-# [API 2] 특정 샘플을 클릭했을 때 우측 공간에 비디오 경로(video_path), CSI 경로(amp_npy_path) 반환하기
-@app.route('/api/samples/<string:sample_id>', methods=['GET'])
-def get_sample_detail(sample_id):
-    try:
-        sample = Sample.query.get(sample_id)
-        if not sample:
-            return jsonify({"error": "해당 샘플을 찾을 수 없습니다."}), 404
-        
-        # 외래키로 연결된 video_data와 csi_data 테이블 조회
-        video = VideoData.query.filter_by(sample_id=sample_id).first()
-        csi = CsiData.query.filter_by(sample_id=sample_id).first()
-
-        # 💡 사용자의 요청사항인 실제 DB 내부의 video_path와 amp_npy_path 원본 문자열을 그대로 담아 보냅니다.
-        return jsonify({
-            "sample_id": sample.sample_id,
-            "environment": sample.environment,
-            "wifi_band": sample.wifi_band,
-            "number_of_users": sample.number_of_users,
-            "user_1_activity": sample.user_1_activity or "None",
-            
-            # 리액트에서 보여줄 원본 DB 경로 문자열 처리
-            "video_path": video.video_path if video else "등록된 video_path가 없습니다.",
-            "amp_npy_path": csi.amp_npy_path if csi else "등록된 amp_npy_path가 없습니다."
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-
-# [API 2] 특정 샘플을 클릭했을 때 비디오 주소, CSI 정보 등 상세 데이터 가져오기
+# [API 2] 중복되던 두 함수를 하나로 깔끔하게 통합했습니다!
 @app.route('/api/samples/<string:sample_id>', methods=['GET'])
 def get_sample_detail(sample_id):
     try:
@@ -105,19 +72,16 @@ def get_sample_detail(sample_id):
         if not sample:
             return jsonify({"error": "해당 샘플을 찾을 수 없습니다."}), 404
         
-        # 2. 외래키(sample_id)로 연결된 CSI 데이터와 비디오 데이터 조회
-        csi = CsiData.query.filter_by(sample_id=sample_id).first()
+        # 2. 외래키로 연결된 video_data와 csi_data 테이블 조회
         video = VideoData.query.filter_by(sample_id=sample_id).first()
+        csi = CsiData.query.filter_by(sample_id=sample_id).first()
 
-        # 💡 [정적 파일 경로 매핑 설정]
-        # DB에 적힌 파일명(예: act_1_1.mp4)만 추출하여 웹 브라우저가 접근 가능한 URL 주소로 만들어줍니다.
+        # 3. 파일명 추출 및 정적 파일 URL 구성
         video_filename = os.path.basename(video.video_path) if video else ""
-        
-        # 💡 전처리팀(진우혁 팀원)이 만든 .npy 기반의 시각화 히트맵/그래프 파일명 예측 매핑
-        # 만약 이미지가 생성되어 static/csi_plots 폴더에 저장된다고 가정한 파일 이름입니다.
         heatmap_filename = f"{sample_id}_heatmap.png"
         graph_filename = f"{sample_id}_graph.png"
 
+        # 4. 원본 경로 정보와 웹 URL 주소를 모두 포함하여 하나의 JSON으로 반환
         return jsonify({
             "sample_id": sample.sample_id,
             "environment": sample.environment,
@@ -126,7 +90,11 @@ def get_sample_detail(sample_id):
             "user_1_activity": sample.user_1_activity or "None",
             "user_2_activity": sample.user_2_activity or "None",
             
-            # 리액트 태그(video src, img src)가 가져갈 수 있는 백엔드 주소 형태 구성
+            # 원본 DB 내부 경로 문자열
+            "video_path": video.video_path if video else "등록된 video_path가 없습니다.",
+            "amp_npy_path": csi.amp_npy_path if csi else "등록된 amp_npy_path가 없습니다.",
+            
+            # 리액트 UI 태그(video src, img src)용 URL 주소 형태
             "video_url": f"http://localhost:5000/static/videos/{video_filename}" if video_filename else None,
             "heatmap_url": f"http://localhost:5000/static/csi_plots/{heatmap_filename}",
             "graph_url": f"http://localhost:5000/static/csi_plots/{graph_filename}"
