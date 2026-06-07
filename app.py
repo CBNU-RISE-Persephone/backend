@@ -63,8 +63,8 @@ def stream_video(filename):
 
 @app.route("/heatmaps/<path:filename>")
 def stream_heatmap(filename):
-	heatmap_dir = os.path.join(app.root_path, 'static/videos')
-	return send_from_directory(video_dir, filename)
+	heatmap_dir = os.path.join(app.root_path, 'static/heatmaps')
+	return send_from_directory(heatmap_dir, filename)
 
 @app.route("/api/questions", methods=["POST"])
 def create_question():
