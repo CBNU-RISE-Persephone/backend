@@ -1,5 +1,7 @@
-from flask import Flask, jsonify, request
+
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
+import os
 import pymysql
 
 app = Flask(__name__)
@@ -11,7 +13,7 @@ app.json.ensure_ascii = False
 def get_connection(database):
     return pymysql.connect(
         host="127.0.0.1",
-        port=13306,
+        port=3306,
         user="admin",
         password="Qlalfqjsgh2@",
         database=database,
@@ -54,6 +56,15 @@ def get_team_members():
         if "conn" in locals():
             conn.close()
 
+@app.route("/videos/<path:filename>")
+def stream_video(filename):
+	video_dir = os.path.join(app.root_path, 'static/videos')
+	return send_from_directory(video_dir, filename)
+
+@app.route("/heatmaps/<path:filename>")
+def stream_heatmap(filename):
+	heatmap_dir = os.path.join(app.root_path, 'static/videos')
+	return send_from_directory(video_dir, filename)
 
 @app.route("/api/questions", methods=["POST"])
 def create_question():
