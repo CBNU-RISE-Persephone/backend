@@ -16,7 +16,7 @@ VIDEOS_DIR = "/data/WiMANS/videos"
 def get_connection(database):
     return pymysql.connect(
         host="127.0.0.1",
-        port=13306,
+        port=3306,
         user="admin",
         password="Qlalfqjsgh2@",
         database=database,
@@ -57,8 +57,8 @@ def get_dynamic_samples():
                     "user_2_activity": "N/A",
                     "video_path": os.path.join(VIDEOS_DIR, filename),
                     "amp_npy_path": os.path.join(HEATMAP_DIR, heatmap_filename),
-                    "video_url": f"http://localhost:5000/static/videos/{filename}",
-                    "heatmap_url": f"http://localhost:5000/static/heatmaps/{heatmap_filename}"
+                    "video_url": f"/static/videos/{filename}",
+                    "heatmap_url": f"/static/heatmaps/{heatmap_filename}"
                 })
                 idx += 1
                 
