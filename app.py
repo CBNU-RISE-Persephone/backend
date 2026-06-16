@@ -1,11 +1,13 @@
 import os
-from flask import Flask, jsonify, request, send_from_directory, abort
+from flask import Flask, jsonify, request, send_from_directory, abort, session
 from flask_cors import CORS
+from werkzeug.security import check_password_hash
+
 import pymysql
 
 app = Flask(__name__)
-
-CORS(app)
+app.secret_key = "dev-secret-key-change-later"
+CORS(app, supports_credentials=True)
 
 app.json.ensure_ascii = False
 
@@ -64,6 +66,7 @@ def get_dynamic_samples():
                 
     return samples
 
+
 @app.route("/")
 def home():
     return jsonify({
@@ -82,6 +85,7 @@ def serve_video(filename):
         abort(404, description="Video file not found")
     return send_from_directory(VIDEOS_DIR, filename)
 
+# GET 
 @app.route('/api/samples', methods=['GET'])
 def get_samples():
     samples = get_dynamic_samples()
@@ -119,6 +123,39 @@ def get_team_members():
         if "conn" in locals():
             conn.close()
 
+# GET : from 목록 조회
+@app.route("/api/questions", methods=["GET"])
+def get_questions():
+    try:
+        conn = get_connection("questions")
+
+        with conn.cursor() as cursor:
+            sql = """
+                SELECT question_id, name, email, contents, created_at AS create_at
+                FROM questions
+                ORDER BY create_at DESC
+            """
+            cursor.execute(sql)
+            questions = cursor.fetchall()
+        
+        # 200 : 불러오기 성공
+        return jsonify({"questions": questions}), 200
+    
+    # 500 : 문의 목록 불러오기 실패
+    except Exception as e:
+        print("문의 목록 조회 오류:", repr(e))
+        return jsonify({
+            "error": "문의 목록을 불러오지 못했습니다.",
+            "detail": str(e)
+        }), 500
+    
+    finally:
+        if "conn" in locals():
+            conn.close()
+
+
+
+# POST : contact form 작성
 @app.route("/api/questions", methods=["POST"])
 def create_question():
     try:
@@ -150,6 +187,57 @@ def create_question():
     finally:
         if "conn" in locals():
             conn.close()
+
+# POST : admin login request
+@app.route("/api/admin/login", methods=["POST"])
+def admin_login():
+    try:
+        data = request.get_json()
+
+        username = data.get("username")
+        passoword = data.get("password")
+
+        # 400 : id, pw 없음
+        if not username or not passoword:
+            return jsonify({"error": "username, password는 필수입니다."}), 400
+        
+        conn = get_connection("persephone_web")
+
+        with conn.cursor() as cursor:
+            sql = "SELECT admin_id, username, password_hash FROM admin WHERE username = %s LIMIT 1"
+            cursor.execute(sql, (username,))
+            admin = cursor.fetchone()
+        
+        # 401 : username 불일치
+        if not admin:
+            return jsonify({"error": "아이디 또는 비밀번호가 맞지 않습니다."}), 401
+        # 401 : password(hash) 불일치
+        if not check_password_hash(admin["password_hash"], passoword):
+            return jsonify({"error": "아이디 또는 비밀번호가 맞지 않습니다."}), 401
+
+        # 200 : 로그인 성공
+        session["admin_id"] = admin["admin_id"]
+        session["admin_username"] = admin["username"]
+
+        return jsonify({
+            "message": "로그인 성공",
+            "admin":{
+                "id": admin["admin_id"],
+                "username": admin["username"]
+            }
+        }), 200
+
+    except Exception as e:
+        print("Admin login error:", repr(e))
+        return jsonify({
+            "error": "로그인 처리 중 오류 발생함.",
+            "detail": str(e)
+        }), 500
+
+    finally:
+        if "conn" in locals():
+            conn.close()
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
