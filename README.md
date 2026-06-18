@@ -1,73 +1,50 @@
-# Persephone Backend
+# CBNU-RISE-Persephone Backend
 
-Flask 기반 Persephone 웹페이지 백엔드 서버입니다.
+## Overview
 
-## 실행 방법
+Persephone 프로젝트를 진행하며 데이터 관리, 문의 처리, 기타 기능 등 웹 서비스 연동 가능성을 실험하기 위해 제작한 백엔드 사이드 프로젝트입니다.
 
-### 1. 가상환경 생성
+## Features
 
-```bash
-python -m venv venv
-```
+백엔드는 Flask를 기반으로 구성되어 있으며, 프론트엔드에서 필요한 데이터 제공과 사용자 문의 처리, 관리자 인증 기능을 담당합니다.
 
-### 2. 가상환경 실행
+## Tech Stack
 
-Windows PowerShell 기준:
+- Frontend : JavaScript, React + SCSS design
+- Backend : Python3, Flask, PyMySQL
+- Database : MySQL
 
-```bash
-.\venv\Scripts\activate
-```
+## Database
 
-### 3. 패키지 설치
+본 프로젝트는 MySQL을 사용하여 프로젝트 데이터와 문의 데이터를 관리합니다.  
+주요 데이터베이스는 `WiMANS`이며, 프로젝트 진행 과정에서 문의 관리용 `questions` 데이터베이스와 `persephone_web` 데이터베이스도 함께 사용합니다.
 
-```bash
-pip install flask flask-cors pymysql python-dotenv
-```
+전체 데이터는 크게 관리자 및 팀원 정보, WiMANS 샘플 데이터, CSI 데이터, 영상 데이터, 문의 데이터로 구성됩니다.
 
-### 4. .env 파일 생성
 
-백엔드 폴더 안에 `.env` 파일을 만들고 아래 형식으로 작성합니다.
+## API Documentation
 
-```env
-DB_HOST=127.0.0.1
-DB_PORT=13306
-DB_USER=admin
-DB_PASSWORD=Qlalfqjsgh2@
-```
+| Feature | Description |
+| --- | --- |
+| 서버 상태 확인 | 백엔드 서버가 정상적으로 실행 중인지 확인할 수 있는 기본 응답을 제공합니다. |
+| 정적 파일 제공 | 샘플과 연결된 영상 파일 및 히트맵 GIF 파일을 프론트엔드에서 접근할 수 있도록 제공합니다. |
+| 팀원 정보 조회 | MySQL의 `team_members` 테이블에서 팀원 정보를 조회하여 프론트엔드에 전달합니다. |
+| 문의 등록 | 사용자가 Contact Form에 입력한 이름, 이메일, 문의 내용을 DB에 저장합니다. |
+| 문의 목록 조회 | 저장된 문의 목록을 최신순으로 조회하여 관리자 페이지에서 확인할 수 있도록 제공합니다. |
+| 관리자 로그인 | 관리자 계정 정보를 확인하고, 비밀번호 해시 검증 후 세션에 로그인 정보를 저장합니다. |
 
-### 5. DB 터널 실행
+기타 상세 데이터에 대한 정보는 추후에 개발 예정입니다.
 
-별도 PowerShell 창에서 아래 명령어를 실행합니다.
+## Git Workflow and Commit Convention
 
-```bash
-cloudflared access tcp --hostname db.demeter-persephone.cloud --listener localhost:13306
-```
+본 프로젝트는 `main` 브랜치를 기준 브랜치로 사용하며, 모든 기능 개발과 버그 수정은 별도의 작업 브랜치를 생성하여 진행합니다.  
+`main` 브랜치는 항상 실행 가능한 안정적인 상태를 유지하는 것을 목표로 하며, 직접 커밋하지 않고 Pull Request를 통해 변경 사항을 병합합니다.
 
-이 터미널은 닫지 않습니다.
+브랜치는 작업 목적이 명확하게 드러나도록 `feature/`, `fix/`, `docs/`, `refactor/` 등의 prefix를 사용하여 생성합니다.  
+새로운 기능을 추가하는 경우에는 `feature/기능명`, 버그를 수정하는 경우에는 `fix/수정내용` 형식을 사용합니다.
 
-### 6. Flask 서버 실행
 
-```bash
-python app.py
-```
+## Future Improvements
 
-정상 실행 시 아래 주소에서 서버가 실행됩니다.
-
-```txt
-http://localhost:5000
-```
-
-## API 확인
-
-팀원 정보 조회:
-
-```txt
-GET http://localhost:5000/api/team-members
-```
-
-문의 저장:
-
-```txt
-POST http://localhost:5000/api/questions
-```
-
+학교 측에서 제공 예정이었던 연구실 환경의 일정이 지연됨에 따라, 본 프로젝트에서는 초기 모델 개발 및 웹 서비스 연동까지는 진행하지 못했습니다.  
+그러나 웹 서비스 구조는 추후 AI 모델을 연동할 수 있도록 확장 가능성을 고려하여 설계하였으며, 연구 환경이 구축된 이후에는 모델 추론 결과를 실시간으로 웹에 적용하는 기능을 추가할 계획입니다.
